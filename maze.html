@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<title>3D迷宫</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<center><h1>3D迷宫</h1></center>
+迷宫尺寸(实际尺寸为n*2+1)：<input id="size" type="number" min="1" max="50"></input>&nbsp;&nbsp;&nbsp;<button onclick="generate();">生成迷宫</button>
+<p/>
+*W、A、S、D控制移动，鼠标控制方向，按C键开启/关闭上帝视角
+<p/>
+<script id="vertex-shader" type="x-shader/x-vertex">
+precision mediump float;
+
+attribute  vec4 vPosition;
+attribute vec2 inUV;  
+attribute  vec3 vNormal;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+varying vec2 outUV; 
+varying vec4 vp;
+varying vec3 vn;
+void main() 
+{
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+	outUV = inUV;
+	vp=vPosition;
+	vn=vNormal;
+} 
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform sampler2D texture; 
+uniform float type;
+uniform vec4 lightDiffuse,lightSpecular;
+uniform vec4 lightAmbient;
+uniform vec4 lightPosition;
+uniform float shininess;
+uniform mat4 modelViewMatrix;
+
+varying vec2 outUV; 
+varying vec4 vp;
+varying vec3 vn;
+void
+main()
+{
+	if(type<1e-6){
+		//gl_FragColor = texture2D(texture, outUV); 
+		vec4 color=texture2D(texture, outUV); 
+		vec4 diffuseProduct = lightDiffuse*color;
+		vec4 specularProduct = lightSpecular*color;
+
+		vec3 pos = -vp.xyz;//-(modelViewMatrix * vp).xyz;
+		
+		vec3 light = lightPosition.xyz;
+		vec3 L = normalize( light - pos );
+
+		vec3 E = normalize( -pos );
+		vec3 H = normalize( L + E );
+		
+		vec4 NN = vec4(vn,0);
+
+		vec3 N = normalize(vn);//normalize( (modelViewMatrix*NN).xyz);
+
+		vec4 ambient = lightAmbient*color;
+
+		float Kd = max( dot(L, N), 0.0 );
+		vec4  diffuse = Kd*diffuseProduct;
+
+		float Ks = pow( max(dot(N, H), 0.0), shininess );
+		vec4  specular = Ks * specularProduct;
+		
+		if( dot(L, N) < 0.0 ) {
+		specular = vec4(0.0, 0.0, 0.0, 1.0);
+		} 
+		
+		vec4 fColor = ambient + diffuse +specular;
+		fColor.a = 1.0;
+		gl_FragColor = fColor;
+	}else if(type-1.0<1e-6&&1.0-type<1e-6){
+		gl_FragColor = vec4(0.0586,0.785,0.9687,1.0); 
+	}else if(type-2.0<1e-6&&2.0-type<1e-6){
+		gl_FragColor = vec4(1,0,0,1); 
+	}else if(type-3.0<1e-6&&3.0-type<1e-6){
+		gl_FragColor = vec4(0,1,0,1); 
+	}else if(type-4.0<1e-6&&4.0-type<1e-6){
+		gl_FragColor = vec4(0.1,0.1,0.1,0.75); 
+	}else if(type-5.0<1e-6&&5.0-type<1e-6){
+		vec4 color=texture2D(texture, outUV); 
+		gl_FragColor = color*vec4(0.5,0.5,0.5,1); 
+	}
+}
+</script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/webgl-utils.js"></script>
+<script type="text/javascript" src="js/InitShaders.js"></script>
+<script type="text/javascript" src="js/MV.js"></script>
+<script type="text/javascript" src="js/maze.js"></script>
+
+<body>
+
+<center>
+<canvas id="gl-canvas" width="768" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas></center>
+
+
+
+</body>
+</html>
